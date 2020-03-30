@@ -1,0 +1,168 @@
+/*---------------------------------------------------------------------------------------------------------------------------------------------------
+Include Section for Humidity sensor. From file esp8266_dht*/
+
+
+// Example testing sketch for various DHT humidity/temperature sensors
+// Written by ladyada, public domain
+
+// REQUIRES the following Arduino libraries:
+// - DHT Sensor Library: https://github.com/adafruit/DHT-sensor-library
+// - Adafruit Unified Sensor Lib: https://github.com/adafruit/Adafruit_Sensor
+
+#include "DHT.h"
+
+#define DHTPIN 4     // Digital pin connected to the DHT sensor
+// Feather HUZZAH ESP8266 note: use pins 3, 4, 5, 12, 13 or 14 --
+// Pin 15 can work but DHT must be disconnected during program upload.
+
+// Uncomment whatever type you're using!
+#define DHTTYPE DHT11   // DHT 11
+#include <Servo.h>
+//#define DHTTYPE DHT22   // DHT 22  (AM2302), AM2321
+//#define DHTTYPE DHT21   // DHT 21 (AM2301)
+
+// Connect pin 1 (on the left) of the sensor to +5V
+// NOTE: If using a board with 3.3V logic like an Arduino Due connect pin 1
+// to 3.3V instead of 5V!
+// Connect pin 2 of the sensor to whatever your DHTPIN is
+// Connect pin 4 (on the right) of the sensor to GROUND
+// Connect a 10K resistor from pin 2 (data) to pin 1 (power) of the sensor
+
+// Initialize DHT sensor.
+// Note that older versions of this library took an optional third parameter to
+// tweak the timings for faster processors.  This parameter is no longer needed
+// as the current DHT reading algorithm adjusts itself to work on faster procs.
+DHT dht(DHTPIN, DHTTYPE);
+
+/*----------------------------------------------------------------------------------------------------------------------------------------------------
+*/ 
+
+Servo servo;
+int pos = 0;
+
+void servoMotor()
+{
+  
+  /*if(pos == 0)
+  {
+    for (pos = 0; pos <= 90; pos += 1)  // goes from 0 degrees to 180 degrees
+    { 
+    // in steps of 1 degree
+    servo.write(pos);              // tell servo to go to position in variable 'pos'
+    delay(15);                       // waits 15ms for the servo to reach the position
+    if(pos == 90)
+    {
+      pos == 0;
+      Serial.end();
+      //break;                        // Breaks the for loop
+      //Serial.begin(9600);
+    }
+    
+    
+    }
+  }*/
+  servo.write(90);
+  delay(1000);
+  servo.write(0);
+  delay(1000);
+}
+
+
+void dhtSensor()
+{
+  
+  int limit = 0;
+  
+  //----DHT CODE----
+  // Wait a few seconds between measurements.
+  delay(2000);
+
+  // Reading temperature or humidity takes about 250 milliseconds!
+  // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
+  
+  float h = dht.readHumidity();
+  // Read temperature as Celsius (the default)
+  float t = dht.readTemperature();
+  // Read temperature as Fahrenheit (isFahrenheit = true)
+  float f = dht.readTemperature(true);
+
+  // Check if any reads failed and exit early (to try again).
+  if (isnan(h) || isnan(t) || isnan(f)) {
+    Serial.println(F("Failed to read from DHT sensor!"));
+    
+    return;
+  }
+  int ff = f;
+  int condition = 54;
+  // Turn on relay if temp reaches a certain point--------------------------------------------------------------------
+  pinMode(D1, OUTPUT);
+  /*digitalWrite(D1, HIGH);
+  delay(2000);
+  digitalWrite(D1, LOW);
+  delay(2000);*/
+  //digitalWrite(D1, LOW);
+  //delay(2000);
+  if (ff <= condition )
+  {
+    digitalWrite(D1, LOW);
+    Serial.print("\nturn off\n");
+    delay(120000); // 2 min delay
+  }
+  else 
+  {
+    digitalWrite(D1 , HIGH); // When the temp goes above 54, the fan turns on 
+   // delay(2000);
+    Serial.print("\nturn on\n");
+    delay(120000); // 2 min delay
+  } 
+  /*
+  This is the info for I2C for ethylene and esp
+  
+  The default pins are defined in variants/nodemcu/pins_arduino.h as SDA=4 and SCL=5, but those are not pins number but GPIO number, so since the pins are D1=5 and D2=4.
+Anyway, you can also choose the pins yourself using the I2C constructor Wire.begin(int sda, int scl);
+
+  */
+  
+  
+  
+  //-----------------------------------------------------------------------------------------------------------------------
+  // Compute heat index in Fahrenheit (the default)
+  float hif = dht.computeHeatIndex(f, h);
+  // Compute heat index in Celsius (isFahreheit = false)
+  float hic = dht.computeHeatIndex(t, h, false);
+
+  Serial.print(F("Humidity: "));
+  Serial.print(h);
+  Serial.print(F("%  Temperature: "));
+  Serial.print(t);
+  Serial.print(F("°C "));
+  Serial.print(f);
+  Serial.print(F("°F  Heat index: "));
+  Serial.print(hic);
+  Serial.print(F("°C "));
+  Serial.print(hif);
+  Serial.println(F("°F"));
+  
+}
+void setup() 
+{
+  //----Servo Code-----
+  servo.attach(5); //D1
+  servo.write(0);
+  
+  //---- DHT CODE------
+  Serial.begin(9600);
+  Serial.println(F("DHTxx test!"));
+
+  dht.begin();
+  
+}
+
+void loop() 
+{
+ 
+  servoMotor();
+  
+  //Serial.print("yoo\n");
+  dhtSensor();  
+}
